@@ -1,0 +1,159 @@
+
+This document is best viewed using Emacs [[http://org-mode.org][org-mode]].
+
+* Web Server Index.
+
+#+begin_src html :tangle ./code/index.html :exports code :noweb yes
+<html>
+<header>
+
+</header>
+<body>
+
+<p>Hello world!</p>
+<p> <a href="./images">Images</a> </p>
+<form name="camera" method="post" action="/send">
+
+<h3>Exposure </h3>
+<input type="radio" name="exposureMode" value="off">off<br>
+<input type="radio" name="exposureMode" checked="checked" value="auto">auto<br>
+<input type="radio" name="exposureMode" value="night">night<br>
+<input type="radio" name="exposureMode" value="backlight">backlight<br>
+<input type="radio" name="spotlight" value="off">spotlight<br>
+<input type="radio" name="exposureMode" value="sports">sports<br>
+<input type="radio" name="exposureMode" value="snow">snow<br>
+<input type="radio" name="exposureMode" value="beach">beach<br>
+<input type="radio" name="exposureMode" value="verylong">verylong<br>
+<input type="radio" name="exposureMode" value="fixedfps">fixedfps<br>
+<input type="radio" name="exposureMode" value="antishake">antishake<br>
+<input type="radio" name="exposureMode" value="fireworks">fireworks<br>
+
+
+<input type="submit" value="Submit">
+
+</form>
+</body>
+
+</html>
+
+
+#+end_src
+
+
+* Camera Server.
+
+#+begin_src python :tangle ./code/camserver.py :exports code :noweb yes
+#!/usr/bin/python2
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+import os
+import cgi
+from urlparse import urlparse, parse_qs
+import datetime
+
+PORT_NUMBER = 8000
+
+#This class will handles any incoming request from
+#the browser
+class myHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        # Parse query data
+        # Note we aren't passing any query components in our application
+        # so this data is ignored.
+        query_components = parse_qs(urlparse(self.path).query)
+
+        if self.path=="/":
+            self.path="/index.html"
+        try:
+            sendReply = False
+
+            if os.path.isdir("." + self.path):
+                # If the path is just a directory assume
+                # it contains a list of files we want to view.
+
+                dir_list = os.listdir("." + self.path)
+                mimetype='text/html'
+                self.send_response(200)
+                self.send_header('Content-type',mimetype)
+                self.end_headers()
+                for item in dir_list:
+                    self.wfile.write('<a href="%s/%s"> %s </a></br>' % (self.path, item, item))
+                return
+
+            #Check the file extension required and
+            #set the right mime type
+            if self.path.endswith(".html"):
+                mimetype='text/html'
+                sendReply = True
+            if self.path.endswith(".jpg"):
+                mimetype='image/jpg'
+                sendReply = True
+            if self.path.endswith(".gif"):
+                mimetype='image/gif'
+                sendReply = True
+            if self.path.endswith(".js"):
+                mimetype='application/javascript'
+                sendReply = True
+            if self.path.endswith(".css"):
+                mimetype='text/css'
+                sendReply = True
+
+            if sendReply == True:
+                #Open the static file requested and send it
+                f = open(os.curdir + os.sep + self.path)
+                self.send_response(200)
+                self.send_header('Content-type',mimetype)
+                self.end_headers()
+                self.wfile.write(f.read())
+                f.close()
+            return
+
+        except IOError:
+            self.send_error(404,'File Not Found: %s' % self.path)
+
+    # Handler for the POST requests
+    # This handles the form data.
+    def do_POST(self):
+        if self.path=="/send":
+            form = cgi.FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={'REQUEST_METHOD':'POST',
+                         'CONTENT_TYPE':self.headers['Content-Type'],
+            })
+
+            exposure = form['exposureMode'].value
+            print exposure
+
+
+            timestamp = datetime.datetime.now()
+            datestamp = timestamp.strftime('%Y-%m-%d_%H-%M-%S')
+            cmd = "raspistill -o ./images/%s.jpg" %(datestamp)
+            image = datestamp + ".jpg"
+            os.system(cmd)
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write("<html>")
+            self.wfile.write("<body>")
+            self.wfile.write("Photo saved.")
+            self.wfile.write('<p><img src=/images/%s height="250" width="250"</p>' % (image))
+            self.wfile.write('Home <a href="/"> Home </a>')
+            self.wfile.write("</body>")
+            self.wfile.write("</html>")
+            return
+
+
+try:
+    #Create a web server and define the handler to manage the
+    #incoming request
+    server = HTTPServer(('', PORT_NUMBER), myHandler)
+    print 'Started httpserver on port ' , PORT_NUMBER
+
+    #Wait forever for incoming htto requests
+    server.serve_forever()
+
+except KeyboardInterrupt:
+    print '^C received, shutting down the web server'
+    server.socket.close()
+
+
+#+end_src
