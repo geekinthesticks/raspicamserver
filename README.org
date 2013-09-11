@@ -1,1 +1,74 @@
-Nothing to see yet.
+* RaspberryPi Camera Server.
+I am interested in taking time lapse photos in remote locations. One
+thing I need to do is to take and view single photos while the camera
+container is on site, so I can adjust the position to get the best
+view.
+
+My solution is to create a very simple web server in Python that I can
+connect to via WiFi. The index page displays a form that allows me
+take single photos and then preview the results.
+
+At the moment this is just a proof of concept. The final version of
+the project will create a WiFi hotspot using the Pi, to which you can
+connect your mobile phone. You can still use the Pi on your own
+network via the ethernet port. The reason for doing it this way is
+that most remote locations don't have any network infrastructure, so
+the only method of connecting to your Pi is by using a built in WiFi
+hotspot.
+
+* Source Code.
+The source is generated from the pi_camera_server.org document using
+[[http://org-mode.org][org-mode]] [[http://orgmode.org/worg/org-contrib/babel/][Babel]]. The generated source will be found in the "code"
+directory.
+
+* Usage.
+Raspicamserver should work on any Linux distribution that runs on the
+Pi. he only requirement is a working version of Python 2.x.
+
+Place the camserver.py and index.html is a suitable directory Login
+via ssh and start the server:
+
+: ./camserver.py
+
+By default the server saves images in the "images" directory. You need
+to create this directory. From the same directory as where you
+installed camserver.py:
+
+: mkdir images
+
+If everything is working you should see the following message in the
+terminal:
+
+: Started httpserver on port  8000
+
+Point your web browser to:
+
+: http://your_raspberrypi_ip_address:8000
+
+to display the index page.
+
+At the moment the various options on the index page don't do
+anything. The photo will be created using the default camera options
+with a time stamped file name like "2013-09-01_15-20-10.jpg". Click
+the "Submit" button to take a photo. When the photo is taken a preview
+should be displayed. You can view all images as a directory listing by
+clicking on the "Images" link in the index page.
+
+* Feedback.
+You can contact me by email at ian at manor-farm dot org, via Twitter
+as @ianbarton,
+
+* Licence (see COPYING file).
+
+Raspicamserver is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.
+
+Raspicamserver is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
